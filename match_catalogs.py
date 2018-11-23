@@ -30,8 +30,10 @@ def match_cat(tdata_1,tdata_2,radius=0.5/3600):
     return matches
 
 def plot_eff_cont(tdata_1,tdata_2,matches,minmax,binning,binvar,field):
-    success = np.empty(binning)
-    dsuccess = np.empty(binning)
+    ppv = np.empty(binning)
+    dppv = np.empty(binning)
+    tpr = np.empty(binning)
+    dtpr = np.empty(binning)
     midbins = np.empty(binning)
     interval = float(minmax[1]-minmax[0])/float(binning)
     ref_class = 'iclassification_extendedness'
@@ -41,25 +43,33 @@ def plot_eff_cont(tdata_1,tdata_2,matches,minmax,binning,binvar,field):
     th = 2.5
     for i in range(binning):
         lo = minmax[0]+i*interval
-        midbins[i] = minmax[0]+(i*interval)/2.0
+        midbins[i] = lo + interval*0.5
         mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval) & (tdata_1[data_class][matches['i1']] > th)
         #print(len(tdata_2[ref_class][matches['i2']]))
-        good = sum(tdata_2[ref_class][matches['i2']][mask] == truth)
-        bad = sum(tdata_2[ref_class][matches['i2']][mask] != truth)
-        print(lo,'-',lo+interval,good,bad)
-        success[i] = float(good)/float(good+bad)
-        dsuccess[i] = 1/float(good+bad)
-        dsuccess[i] = dsuccess[i]*np.sqrt(float(good)*(1-dsuccess[i]))
-        print(success[i],dsuccess[i])
-    print(midbins,success)
+        tp = sum(tdata_2[ref_class][matches['i2']][mask] == truth)
+        fp = sum(tdata_2[ref_class][matches['i2']][mask] != truth)
+        print(lo,'-',lo+interval,tp,fp)
+        ppv[i] = float(tp)/float(tp+fp)
+        dppv[i] = 1/float(tp+fp)
+        dppv[i] = dppv[i]*np.sqrt(float(tp)*(1-dppv[i])) #binomial error, temporary
+        mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval) & (tdata_1[data_class][matches['i1']] < th)
+        tn = sum(tdata_2[ref_class][matches['i2']][mask] == truth)        
+        tpr[i] = float(tp)/float(tp+tn)
+        #mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval)
+        #gals =  sum(tdata_2[ref_class][matches['i2']][mask] == truth)
+        #tpr[i] = float(tp)/float(gals)
+        dtpr[i] = 1/float(tp+fp)
+        dtpr[i] = dtpr[i]*np.sqrt(float(tp)*(1-dtpr[i])) #binomial error, temporary
+        print(midbins[i],1.0-ppv[i],tpr[i])
     #plt.plot(midbins,success)
-    plt.errorbar(midbins,success,yerr=dsuccess,marker='o',label=data_class+' classifier')
+    plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination')
+    plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency')
     plt.xlabel(binvar,fontsize=14)
-    plt.ylabel('Galaxy purity',fontsize=14)
+    plt.ylabel('Galaxy efficiency/contamination',fontsize=14)
     plt.ylim(0.0,1.0)
-    plt.title('Purity vs HSC classification: '+ field, fontsize=16)
-    plt.legend(loc='lower right',fontsize=14)
-    plt.savefig('purity_vs_HSC_'+field+'.png')
+    plt.title('Efficiency/contamination vs HSC classification: '+ field, fontsize=16)
+    plt.legend(loc='upper right',fontsize=14)
+    plt.savefig('effpur_vs_HSC_'+field+'.png')
 
     
 radius = 0.5/3600 #in degrees
