@@ -62,20 +62,23 @@ def plot_eff_cont(tdata_1,tdata_2,matches,minmax,binning,binvar,field):
         dtpr[i] = dtpr[i]*np.sqrt(float(tp)*(1-dtpr[i])) #binomial error, temporary
         print(midbins[i],1.0-ppv[i],tpr[i])
     #plt.plot(midbins,success)
-    plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination')
-    plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency')
+    #plt.figure()
+    plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination '+field)
+    plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency '+field)
     plt.xlabel(binvar,fontsize=14)
     plt.ylabel('Galaxy efficiency/contamination',fontsize=14)
     plt.ylim(0.0,1.0)
-    plt.title('Efficiency/contamination vs HSC classification: '+ field, fontsize=16)
-    plt.legend(loc='upper right',fontsize=14)
-    plt.savefig('effpur_vs_HSC_'+field+'.png')
+    #plt.title('Efficiency/contamination vs HSC classification: '+ field, fontsize=16)
+    plt.title('Efficiency/contamination vs HSC classification', fontsize=16)
+    plt.legend(loc='lower left',fontsize=14)
+    #plt.savefig('effpur_vs_HSC_'+field+'.png')
+    plt.savefig('effpur_vs_HSC.png')
 
     
 radius = 0.5/3600 #in degrees
 
-#fields = ['sxds','deep23','vvds']
-fields = ['sxds']
+fields = ['sxds','deep23','vvds']
+#fields = ['sxds']
 
 for field in fields:
     print('Matching in field',field)
