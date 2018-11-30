@@ -29,6 +29,46 @@ def match_cat(tdata_1,tdata_2,radius=0.5/3600):
     
     return matches
 
+def plot_detection_completeness(tdata_1,tdata_2,matches,minmax,binning,binvar,field):
+    compl = np.empty(binning)
+    dcompl = np.empty(binning)
+    midbins = np.empty(binning)
+    interval = float(minmax[1]-minmax[0])/float(binning)
+    ref_class = 'iclassification_extendedness'
+    # for galaxies
+    for typ in ['Stars','Galaxies']:
+        for i in range(binning):
+            lo = minmax[0]+i*interval
+            midbins[i] = lo + interval*0.5
+            if field == 'vvds':
+                mask_match = (tdata_2[binvar][matches['i2']] > lo) & (tdata_2[binvar][matches['i2']] < lo + interval) & (tdata_2['ra'][matches['i2']] > 337)
+                mask = (tdata_2[binvar] > lo) & (tdata_2[binvar] < lo + interval) & (tdata_2['ra'] > 337)
+            else:
+                mask_match = (tdata_2[binvar][matches['i2']] > lo) & (tdata_2[binvar][matches['i2']] < lo + interval)
+                mask = (tdata_2[binvar] > lo) & (tdata_2[binvar] < lo + interval)
+            if typ == 'Galaxies':
+                detgal = sum(tdata_2[ref_class][matches['i2']][mask_match] > 0.5)
+                allgal = sum(tdata_2[ref_class][mask] > 0.5)
+            else:
+                detgal = sum(tdata_2[ref_class][matches['i2']][mask_match] < 0.5)
+                allgal = sum(tdata_2[ref_class][mask] < 0.5)
+            compl[i] = float(detgal)/float(allgal)
+            dcompl[i] = 1/float(allgal)
+            dcompl[i] = dcompl[i]*np.sqrt(float(detgal)*(1-dcompl[i])) #binomial error, temporary
+            
+        if typ == 'Galaxies':
+            plt.errorbar(midbins,compl,yerr=dcompl,marker='o',label=typ+' '+field)
+        else:
+            plt.errorbar(midbins,compl,yerr=dcompl,marker='o',label=typ+' '+field,linestyle = '--')            
+    plt.xlabel(binvar,fontsize=14)
+    plt.ylabel('Completeness',fontsize=14)
+    plt.ylim(0.0,1.0)
+    plt.title('Completeness vs HSC objects', fontsize=16)
+    plt.legend(loc='lower left',fontsize=14)
+    plt.savefig('completeness_galaxies_vs_HSC.png')
+
+    # for stars
+
 def plot_eff_cont(tdata_1,tdata_2,matches,minmax,binning,binvar,field):
     ppv = np.empty(binning)
     dppv = np.empty(binning)
@@ -76,9 +116,8 @@ def plot_eff_cont(tdata_1,tdata_2,matches,minmax,binning,binvar,field):
 
     
 radius = 0.5/3600 #in degrees
-
 fields = ['sxds','deep23','vvds']
-#fields = ['sxds']
+#fields = ['vvds']
 
 for field in fields:
     print('Matching in field',field)
@@ -87,4 +126,5 @@ for field in fields:
     hdulist = fits.open(datadir+'field_'+field+'_hsc.fits',memmap=True)
     tdata_2 = hdulist[1].data    
     matches = match_cat(tdata_1,tdata_2,radius=radius)
-    plot_eff_cont(tdata_1,tdata_2,matches,minmax=[20,25],binning=10,binvar='mag_auto_i',field=field)
+    #plot_eff_cont(tdata_1,tdata_2,matches,minmax=[20,25],binning=10,binvar='mag_auto_i',field=field)
+    plot_detection_completeness(tdata_1,tdata_2,matches,minmax=[19,25],binning=10,binvar='icmodel_mag',field=field)
