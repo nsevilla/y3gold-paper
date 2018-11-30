@@ -64,6 +64,8 @@ def write_boxsearch(tablename,dec_range,ra_range,fname_out,output_format="fits",
     #stout+=add_filters("cmodel_flux_flags",behind=False)
     stout+=add_filters("cmodel_mag",behind=False)
     stout+=add_filters("cmodel_mag_err",behind=False)
+    stout+=add_filters("mag_kron",behind=False)
+    stout+=add_filters("mag_kron_err",behind=False)
     stout+="FROM\n"
     stout+="       "+tablename+"\n"
     stout+="WHERE\n"
