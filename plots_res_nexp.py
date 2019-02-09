@@ -49,7 +49,7 @@ def plot_nexp(filey1, filey3, band, lim_inf, lim_sup):
     m = hp.ma(HPX4096)
     m.mask = mask
 
-    ra_DES, dec_DES = np.loadtxt('des_round.dat', usecols=(0, 1), unpack=True)
+    ra_DES, dec_DES = np.loadtxt('data/des_round.dat', usecols=(0, 1), unpack=True)
 
     size = 800
     hp.visufunc.mollview(map=m, flip='geo', format='%.3g', cmap=cmap, coord='C', hold=True, xsize=size,
@@ -57,10 +57,10 @@ def plot_nexp(filey1, filey3, band, lim_inf, lim_sup):
     hp.projplot(ra_DES, dec_DES, lonlat=True, coord=['C'], zorder=10, color='b', lw=0.2)
 
     hp.graticule(dpar=15.,dmer=30., lw=0.1)
-    plt.savefig('primary.png', dpi=600, bbox_inches='tight', pad_inches=0)
+    plt.savefig('figs/primary.png', dpi=600, bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    d_op = mpimg.imread('primary.png')
+    d_op = mpimg.imread('figs/primary.png')
     w, h = len(d_op[0,:]), len(d_op[:,0])
     d_op = d_op[int(0.08156*h):int(0.9095*h),int(0.082*w):int(0.982*w)]
     w, h = len(d_op[0,:]), len(d_op[:,0])
@@ -105,7 +105,7 @@ def plot_nexp(filey1, filey3, band, lim_inf, lim_sup):
     print(m.min(), m.max())
     cb = plt.colorbar(cax=cbaxes, cmap=cmap, orientation='horizontal', label=r'$\mathrm{Y3-Y1\ exposure\ time(s)}$')
     cb.ax.tick_params(labelsize=8) 
-    plt.savefig('HP_EQU_Y3-Y1_NEXP_res_' + band + '.png', dpi=150, bbox_inches='tight')
+    plt.savefig('figs/HP_EQU_Y3-Y1_NEXP_res_' + band + '.png', dpi=150, bbox_inches='tight')
     plt.close()
     plt.clf()
 
@@ -119,14 +119,14 @@ def plot_nexp(filey1, filey3, band, lim_inf, lim_sup):
     plt.ylim([10.,1.5*np.max(n)])
     plt.grid(color='grey', linestyle='-', linewidth=0.5)
     plt.ylabel(r'$\mathrm{N\ Pixels}$')
-    plt.savefig('Y3-Y1_EXPTIME_res_%s.png' % band)
+    plt.savefig('figs/Y3-Y1_EXPTIME_res_%s.png' % band)
     plt.close()
 
 
 nside = 4096
 
-plot_nexp("Y1A1NEW_COADD_SPT_band_g_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_g_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'g', -300, 500)
-plot_nexp("Y1A1NEW_COADD_SPT_band_r_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_r_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'r', -300, 500)
-plot_nexp("Y1A1NEW_COADD_SPT_band_i_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_i_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'i', -300, 500)
-plot_nexp("Y1A1NEW_COADD_SPT_band_z_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_z_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'z', -300, 500)
-plot_nexp("Y1A1NEW_COADD_SPT_band_Y_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_Y_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'Y', -300, 500)
+plot_nexp("data/Y1A1NEW_COADD_SPT_band_g_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_g_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'g', -300, 500)
+plot_nexp("data/Y1A1NEW_COADD_SPT_band_r_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_r_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'r', -300, 500)
+plot_nexp("data/Y1A1NEW_COADD_SPT_band_i_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_i_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'i', -300, 500)
+plot_nexp("data/Y1A1NEW_COADD_SPT_band_z_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_z_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'z', -300, 500)
+plot_nexp("data/Y1A1NEW_COADD_SPT_band_Y_nside4096_oversamp4_EXPTIME__total.fits.gz", "y3a2_Y_o.4096_t.32768_EXPTIME.SUM_EQU.fits.gz", 'Y', -300, 500)

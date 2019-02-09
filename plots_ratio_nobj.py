@@ -16,7 +16,7 @@ def plot_nobj(m, label, filename, labelcb):
 
     nside = hp.npix2nside(len(m))
 
-    ra_DES, dec_DES = np.loadtxt('des_round.dat', usecols=(0, 1), unpack=True)
+    ra_DES, dec_DES = np.loadtxt('data/des_round.dat', usecols=(0, 1), unpack=True)
 
     size = 800
     hp.visufunc.mollview(map=m, flip='geo', format='%.3g', cmap=cmap, coord='C', hold=True, xsize=size,
@@ -70,7 +70,7 @@ def plot_nobj(m, label, filename, labelcb):
     cbaxes = fig.add_axes([0.6, 0.62, 0.275, 0.035])
     cb = plt.colorbar(cax=cbaxes, cmap=cmap, orientation='horizontal', label=r'$\mathrm{%s}$' % labelcb)
     cb.ax.tick_params(labelsize=8) 
-    plt.savefig('HP_EQU_' + filename + '.png', dpi=150, bbox_inches='tight')
+    plt.savefig('figs/HP_EQU_' + filename + '.png', dpi=150, bbox_inches='tight')
     plt.close()
     plt.clf()
 
@@ -78,7 +78,7 @@ def plot_nobj(m, label, filename, labelcb):
 nside1 = 4096
 nside2 = 16384
 
-hdu = fits.open("Y1_HPIX_4096_16384.fits", memmap=True)
+hdu = fits.open("data/Y1_HPIX_4096_16384.fits", memmap=True)
 HPIX_4096_Y1 = hdu[1].data.field('HPIX_4096')
 HPIX_16384_Y1 = hdu[1].data.field('HPIX_16384')
 COUNT_Y1 = hdu[1].data.field('COUNT(COADD_OBJECTS_ID)')
@@ -87,7 +87,7 @@ hdu.close()
 HPX4096_Y1 = np.bincount(HPIX_4096_Y1, weights=COUNT_Y1, minlength=hp.nside2npix(nside1))
 HPX16384_Y1 = np.bincount(HPIX_16384_Y1, weights=COUNT_Y1, minlength=hp.nside2npix(nside2))
 
-hdu2 = fits.open("Y3_HPIX_4096_16384.fits", memmap=True)
+hdu2 = fits.open("data/Y3_HPIX_4096_16384.fits", memmap=True)
 HPIX_4096_Y3 = hdu2[1].data.field('HPIX_4096')
 hdu2.close()
 
@@ -106,10 +106,10 @@ plt.xlabel(r'$\mathrm{Objects\ per\ Pixel}$')
 plt.title(r'$\mathrm{Objects\ per\ Pixel\ (Nside=4096)}$')
 plt.xlim([0.,50.])
 plt.ylabel(r'$\mathrm{Fraction\ of\ pixels}$')
-plt.savefig('histY1Y3_4096.png')
+plt.savefig('figs/histY1Y3_4096.png')
 plt.close()
 
-hdu3 = fits.open("Y3_HPIX_16384_bins_not_equal_zero.fits", memmap=True)
+hdu3 = fits.open("data/Y3_HPIX_16384_bins_not_equal_zero.fits", memmap=True)
 HPX16384_Y3 = hdu3[1].data.field('HPIX_16384')
 hdu3.close()
 
@@ -127,7 +127,7 @@ plt.xlabel(r'$\mathrm{Objects\ per\ Pixel}$')
 plt.xlim([0.,10.])
 plt.ylim([0.,0.7])
 plt.ylabel(r'$\mathrm{Fraction\ of\ Pixels}$')
-plt.savefig('histY1Y3_16384.png')
+plt.savefig('figs/histY1Y3_16384.png')
 plt.close()
 exit()
 mask = np.zeros(hp.nside2npix(nside1), dtype=np.bool)

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import astropy.io.fits as fits
 import matplotlib.image as mpimg
 from matplotlib import rc
+from matplotlib.colors import LogNorm
 plt.rc('font',**{'family':'serif','serif':['Helvetica'], 'size': 12})
 mpl.rcParams['legend.numpoints'] = 1
 plt.rc('text', usetex=True)
@@ -12,10 +13,22 @@ cmap = mpl.cm.get_cmap("seismic")
 cmap.set_under('darkgray')
 cmap.set_bad('darkgray')
 
+def extract_crowding_objects(feature, ra, dec, radius_ext):
+
+    ra_obj, dec_obj = np.loadtxt('data/crowded_obj.tab', usecols=(1, 2), unpack=True)
+    
+    for ra_ob, dec_ob in zip(ra_obj, dec_obj):
+        dist_rad = np.arccos(np.sin(np.deg2rad(dec_ob)) * np.sin(np.deg2rad(dec)) + np.cos(np.deg2rad(dec_ob)) * np.cos(np.deg2rad(dec)) * np.cos(np.deg2rad(ra_ob - ra)))
+        dist_deg = np.rad2deg(dist_rad)
+        ra = ra[dist_deg >= radius_ext]
+        dec = dec[dist_deg >= radius_ext]
+        feature = feature[dist_deg >= radius_ext]
+    return ra, dec, feature
+
 
 def plot_moll_cut(m, label, filename, labelcb, nside):
 
-    ra_DES, dec_DES = np.loadtxt('des_round.dat', usecols=(0, 1), unpack=True)
+    ra_DES, dec_DES = np.loadtxt('data/des_round.dat', usecols=(0, 1), unpack=True)
 
     size = 800
     hp.visufunc.mollview(map=m, flip='geo', format='%.3g', cmap=cmap, coord='C', hold=True, xsize=size,
@@ -23,10 +36,10 @@ def plot_moll_cut(m, label, filename, labelcb, nside):
     hp.projplot(ra_DES, dec_DES, lonlat=True, coord=['C'], zorder=10, color='b', lw=0.2)
 
     hp.graticule(dpar=15.,dmer=30., lw=0.1)
-    plt.savefig('primary.png', dpi=600, bbox_inches='tight', pad_inches=0)
+    plt.savefig('figs/primary.png', dpi=600, bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    d_op = mpimg.imread('primary.png')
+    d_op = mpimg.imread('figs/primary.png')
     w, h = len(d_op[0,:]), len(d_op[:,0])
     d_op = d_op[int(0.08156*h):int(0.9095*h),int(0.082*w):int(0.982*w)]
     w, h = len(d_op[0,:]), len(d_op[:,0])
@@ -68,12 +81,12 @@ def plot_moll_cut(m, label, filename, labelcb, nside):
     print(m.min(), m.max())
     cb = plt.colorbar(cax=cbaxes, cmap=cmap, orientation='horizontal', label=r'$\mathrm{%s}$' % labelcb)
     cb.ax.tick_params(labelsize=8) 
-    plt.savefig('HP_EQU_' + filename + '.png', dpi=300, bbox_inches='tight')
+    plt.savefig('figs/HP_EQU_' + filename + '.png', dpi=300, bbox_inches='tight')
     plt.close()
     plt.clf()
 
 
-hdu = fits.open("Y3Y1_match_mag.fits", memmap=True)
+hdu = fits.open("data/Y3Y1_match_mag.fits", memmap=True)
 ra = hdu[1].data.field('ALPHAWIN_J2000')
 dec = hdu[1].data.field('DELTAWIN_J2000')
 angdist = hdu[1].data.field('ANGDIST')
@@ -82,7 +95,78 @@ mag_auto_i = hdu[1].data.field('MAG_AUTO_I')
 diff_mag = hdu[1].data.field('DIFF_MAG')
 hdu.close()
 
+ra_obj, dec_obj = np.loadtxt('crowded_obj.tab', usecols=(1, 2), unpack=True)
+name_obj = np.loadtxt('crowded_obj.tab', usecols=(1, 2), dtype=str, unpack=True)
+
 ra[ra >=180] -= 360.
+
+ra_clean, dec_clean, angdist_clean = extract_crowding_objects(angdist, ra, dec, 0.5)
+
+plt.hist(angdist[mag_auto_i >= 19.], bins=np.arange(0,10,0.01), color='r', alpha = 0.5, lw=1, histtype='step', log=True)
+n, bins, patches = plt.hist(angdist[mag_auto_i >= 19.], bins=np.arange(0.,10.,0.01), color='r', alpha = 0.5, lw=1, log=True)
+plt.title(r'$\mathrm{Y3-Y1\ separation\ arcsec\ for\ mag\_auto\_i>19\ and\ excluding\ crowded\ fields}$')
+plt.xlabel(r'$\mathrm{arcsec}$')
+plt.xlim([0,10])
+plt.ylim([1e2,1.2*np.max(n)])
+plt.grid(color='grey', linestyle='-', linewidth=0.5)
+plt.ylabel(r'$\mathrm{N\ objects}$')
+plt.savefig('figs/Y3-Y1_angsep_hist_for_i_gt_19.png')
+plt.close()
+plt.clf()
+
+exit()
+
+fig = plt.figure(figsize = [9., 6.4])
+ax1 = fig.add_subplot(111)
+plt.hist2d(mag_auto_i, angdist, bins=[400,400], range=[[15., 25],[0, 10]], cmap='inferno_r', norm=LogNorm())
+# plt.text(ra_obj, dec_obj, name_obj)
+plt.xlabel(r'$\mathrm{mag\ i\ Y3}$')
+plt.ylabel(r'$\mathrm{angdist}$')
+plt.xlim([15,25])
+plt.ylim([0,10])
+cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
+cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
+plt.savefig('figs/mag_angdist.png')
+plt.close()
+
+fig = plt.figure(figsize = [9., 6.4])
+ax1 = fig.add_subplot(111)
+plt.hist2d(ra[(angdist <=4.)&(angdist >=1.8)&(mag_auto_i < 19.)], dec[(angdist <=4.)&(angdist >=1.8)&(mag_auto_i < 19.)], bins=[400,400], cmap='inferno_r')
+# plt.text(ra_obj, dec_obj, name_obj)
+plt.title(r'$\mathrm{1.8<r(angular\ separation)<4\ arcsec\ for\ mag\_auto\_i<19}$')
+plt.xlabel(r'$\mathrm{RA}$')
+plt.ylabel(r'$\mathrm{DEC}$')
+plt.xlim([100,-62])
+cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
+cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
+plt.savefig('figs/1.8_r_4_arcsec_i_lt_19.png')
+plt.close()
+
+exit()
+
+'''
+plt.scatter(ra, dec, s=0.005, c='k')
+plt.xlim([96, 93])
+plt.ylim([-53.5, -51.5])
+plt.xlabel(r'$\mathrm{RA}$')
+plt.ylabel(r'$\mathrm{DEC}$')
+plt.savefig('artifact_DES.png')
+plt.close()
+'''
+
+fig = plt.figure(figsize = [9., 6.4])
+ax1 = fig.add_subplot(111)
+plt.hist2d(ra_clean[(angdist_clean >=1.5)&(angdist_clean <=3.)], dec_clean[(angdist_clean >=1.5)&(angdist_clean <=3.)], bins=[400,400], cmap='inferno_r')
+# plt.text(ra_obj, dec_obj, name_obj)
+plt.title(r'$\mathrm{Angular\ separation\ 1.5<r<3\ arcsec\ for\ clean\ sample}$')
+plt.xlabel(r'$\mathrm{RA}$')
+plt.ylabel(r'$\mathrm{DEC}$')
+plt.xlim([100,-62])
+cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
+cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
+plt.savefig('figs/1.5_3_arcsec_clean_sample.png')
+plt.close()
+
 fig = plt.figure(figsize = [9., 6.4])
 ax1 = fig.add_subplot(111)
 plt.hist2d(ra[(angdist <=0.5)], dec[(angdist <=0.5)], bins=[400,400], cmap='inferno_r')
@@ -92,7 +176,7 @@ plt.xlabel(r'$\mathrm{RA}$')
 plt.ylabel(r'$\mathrm{DEC}$')
 cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
 cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
-plt.savefig('0.5_arcsec.png')
+plt.savefig('figs/0.5_arcsec.png')
 plt.close()
 
 fig = plt.figure(figsize = [9., 6.4])
@@ -104,7 +188,7 @@ plt.ylabel(r'$\mathrm{DEC}$')
 plt.xlim([100,-62])
 cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
 cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
-plt.savefig('1.5_3_arcsec.png')
+plt.savefig('figs/1.5_3_arcsec.png')
 plt.close()
 
 fig = plt.figure(figsize = [9., 6.4])
@@ -116,10 +200,8 @@ plt.ylabel(r'$\mathrm{DEC}$')
 plt.xlim([100,-62])
 cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
 cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
-plt.savefig('3.5_5_arcsec.png')
+plt.savefig('figs/3.5_5_arcsec.png')
 plt.close()
-
-exit()
 
 fig = plt.figure(figsize = [9., 6.4])
 ax1 = fig.add_subplot(111)
@@ -132,7 +214,7 @@ plt.xlim([15.5,25])
 plt.ylim([-0.8,1.2])
 cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
 cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
-plt.savefig('Y3-Y1_diff_mag_hist2d_total_range.png')
+plt.savefig('figs/Y3-Y1_diff_mag_hist2d_total_range.png')
 plt.close()
 plt.clf()
 
@@ -147,7 +229,7 @@ plt.ylabel(r'$\mathrm{N\_objects}$')
 plt.xlabel(r'$\mathrm{mag\_auto\ (i)\ [Y3-Y1]}$')
 plt.grid(color='grey', linestyle='-', linewidth=0.5, zorder=-1)
 plt.xlim([-0.8,1.2])
-plt.savefig('Y3-Y1_diff_mag_hist_total_range.png')
+plt.savefig('figs/Y3-Y1_diff_mag_hist_total_range.png')
 plt.close()
 plt.clf()
 
@@ -159,19 +241,19 @@ plt.xlim([0,10])
 plt.ylim([1e2,1.2*np.max(n)])
 plt.grid(color='grey', linestyle='-', linewidth=0.5)
 plt.ylabel(r'$\mathrm{N\ objects}$')
-plt.savefig('Y3-Y1_angsep_hist.png')
+plt.savefig('figs/Y3-Y1_angsep_hist.png')
 plt.close()
 plt.clf()
-print(len(match_flag), match_flag)
+
 n, bins, patches = plt.hist(match_flag, bins=np.arange(0.,4.,0.2), color='r', alpha = 0.5, lw=1, log=True)
-print(n, patches)
+
 plt.title(r'$\mathrm{Match\ flag\ histogram}$')
 plt.xlabel(r'$\mathrm{flag}$')
 plt.xlim([0,3.2])
 plt.ylim([1e5,1.2e8])
 plt.grid(color='grey', linestyle='-', linewidth=0.5)
 plt.ylabel(r'$\mathrm{N\ objects}$')
-plt.savefig('Y3-Y1_matchflag.png')
+plt.savefig('figs/Y3-Y1_matchflag.png')
 plt.close()
 plt.clf()
 

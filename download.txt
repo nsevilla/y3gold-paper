@@ -1,0 +1,19 @@
+select hpix_4096, count(coadd_object_id) from Y3_GOLD_2_2 where mag_auto_i between 17 and 24 group by hpix_4096;> hpix4096_y3_17_24.fits
+
+select hpix_4096, count(coadd_object_id) from Y3_GOLD_2_2 where mag_auto_i between 17 and 23 group by hpix_4096;> hpix4096_y3_17_23.fits
+select hpix_4096, count(coadd_object_id) from Y3_GOLD_2_2 where mag_auto_i between 17 and 25 group by hpix_4096;> hpix4096_y3_17_25.fits
+select hpix as hpix_16384, mcarras2.degrade(HPIX,4096) as HPIX_4096, COUNT(coadd_objects_id) FROM Y1A1_GOLD WHERE mag_auto_i BETWEEN 17 AND 23 GROUP BY hpix;> hpix4096_y1_17_23.fits
+select hpix as hpix_16384, mcarras2.degrade(HPIX,4096) as HPIX_4096, COUNT(coadd_objects_id) FROM Y1A1_GOLD WHERE mag_auto_i BETWEEN 17 AND 24 GROUP BY hpix;> hpix4096_y1_17_24.fits
+select hpix as hpix_16384, mcarras2.degrade(HPIX,4096) as HPIX_4096, COUNT(coadd_objects_id) FROM Y1A1_GOLD WHERE mag_auto_i BETWEEN 17 AND 25 GROUP BY hpix;> hpix4096_y1_17_25.fits
+
+ColDefs(
+    name = 'ALPHAWIN_J2000'; format = 'D'
+    name = 'DELTAWIN_J2000'; format = 'D'
+    name = 'ANGDIST'; format = 'D'
+    name = 'MAG_AUTO_I'; format = 'E'
+    name = 'MATCH_FLAG'; format = 'K'
+    name = 'Y1ID'; format = 'K'
+    name = 'Y3ID'; format = 'K'
+    name = 'Y3Y1_AUTO_RESIDUAL'; format = 'D'
+)
+

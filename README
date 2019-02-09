@@ -1,0 +1,10 @@
+select match.MATCH_FLAG, match.Y1ID, match.Y3ID, y1.mag_auto_i as mag_auto_i_y1_corrected, y3.mag_auto_i+y3.delta_mag_chrom_i+y3.delta_mag_y4_i-y3.A_SED_SFD98_I as mag_auto_i_y3_corrected from NSEVILLA.Y1Y3MATCH match inner join y3_gold_2_2 y3 on match.Y3ID = y3.coadd_object_id inner join y1a1_gold y1 on match.Y1ID=y1.coadd_objects_id;> NSEVILLAY3Y1MATCH_INNERJOIN.fits
+
+CORRECTED MAGNITUDES
+select match.MATCH_FLAG, match.Y1ID, match.Y3ID,
+y1.mag_auto_g as mag_auto_g_y1_corrected, y1.mag_auto_r as mag_auto_r_y1_corrected, y1.mag_auto_i as mag_auto_i_y1_corrected, y1.mag_auto_z as mag_auto_z_y1_corrected,
+y3.mag_auto_g+y3.delta_mag_chrom_g+y3.delta_mag_y4_g-y3.A_SED_SFD98_G as mag_auto_g_y3_corrected,
+y3.mag_auto_r+y3.delta_mag_chrom_r+y3.delta_mag_y4_r-y3.A_SED_SFD98_R as mag_auto_r_y3_corrected,
+y3.mag_auto_i+y3.delta_mag_chrom_i+y3.delta_mag_y4_i-y3.A_SED_SFD98_I as mag_auto_i_y3_corrected,
+y3.mag_auto_z+y3.delta_mag_chrom_z+y3.delta_mag_y4_z-y3.A_SED_SFD98_Z as mag_auto_z_y3_corrected
+from NSEVILLA.Y1Y3MATCH match inner join y3_gold_2_2 y3 on match.Y3ID = y3.coadd_object_id inner join y1a1_gold y1 on match.Y1ID=y1.coadd_objects_id;> NSEVILLAY3Y1MATCH_INNERJOINgriz.fits
