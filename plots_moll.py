@@ -6,6 +6,7 @@ import astropy.io.fits as fits
 import matplotlib.image as mpimg
 from matplotlib import rc
 from matplotlib.colors import LogNorm
+import matplotlib.gridspec as gridspec
 plt.rc('font',**{'family':'serif','serif':['Helvetica'], 'size': 12})
 mpl.rcParams['legend.numpoints'] = 1
 plt.rc('text', usetex=True)
@@ -45,8 +46,11 @@ def plot_moll_cut(m, label, filename, labelcb, nside):
     w, h = len(d_op[0,:]), len(d_op[:,0])
 
     fig = plt.figure(figsize = [9., 6.4])
-    ax1 = fig.add_subplot(111)
-    ax1.set_facecolor('lightgray')
+    gridspec.GridSpec(18,12)
+
+    plt.subplot2grid((18,12), (0,7), colspan=12, rowspan=12)
+    #ax1 = fig.add_subplot(111)
+    plt.set_facecolor('lightgray')
     range_ = 0.2
     plt.imshow(d_op[int(0.4293*h):int(0.9497*h), int(0.3611*w):int(0.75*w)], extent=[-45., 90.,-75.,10.], aspect='auto', origin='upper', interpolation=None, vmin=-1.*range_,
                vmax=range_, cmap=cmap)
@@ -84,6 +88,7 @@ def plot_moll_cut(m, label, filename, labelcb, nside):
     plt.savefig('figs/HP_EQU_' + filename + '.png', dpi=300, bbox_inches='tight')
     plt.close()
     plt.clf()
+    exit()
 
 
 hdu = fits.open("data/Y3Y1_match_mag.fits", memmap=True)
@@ -114,8 +119,6 @@ plt.savefig('figs/Y3-Y1_angsep_hist_for_i_gt_19.png')
 plt.close()
 plt.clf()
 
-exit()
-
 fig = plt.figure(figsize = [9., 6.4])
 ax1 = fig.add_subplot(111)
 plt.hist2d(mag_auto_i, angdist, bins=[400,400], range=[[15., 25],[0, 10]], cmap='inferno_r', norm=LogNorm())
@@ -141,8 +144,6 @@ cbaxes = fig.add_axes([0.908, 0.11, 0.02, 0.773])
 cb = plt.colorbar(cax=cbaxes, cmap='inferno_r', orientation='vertical')
 plt.savefig('figs/1.8_r_4_arcsec_i_lt_19.png')
 plt.close()
-
-exit()
 
 '''
 plt.scatter(ra, dec, s=0.005, c='k')
