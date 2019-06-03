@@ -114,16 +114,44 @@ def plotFoM(validationData,zbins,pzs,metric):
     plt.legend()
     plt.show()
 
-#def plotNz(validationData,zbins,pzs,pzsnz):
+def plotNz_histos(validationData,zbins,pzs):
+
+    refZ = 'Z' #'ZSPEC' #'Z_1'
+    listpzs = list(pzs)
+    colors = ['red','blue']
+    fig = plt.figure()
+    # Turn off axis lines and ticks of the big subplot
+    axmain = fig.add_subplot(111)
+    axmain.spines['top'].set_color('none')
+    axmain.spines['bottom'].set_color('none')
+    axmain.spines['left'].set_color('none')
+    axmain.spines['right'].set_color('none')
+    axmain.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
+    # Create subplots
+    ax = []
+    for f in range(4):
+        ax.append(fig.add_subplot(221+f))
+    # Fill subplots with N(z)
+    for b,(zmin,zmax) in enumerate(zbins):
+        for i,(refPz,pzNz) in enumerate(listpzs):
+            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2)
+            selection = validationData[zsel]
+            ax[b].hist(selection[pzNz],bins=50,histtype='step',range=(0,1.5),color=colors[i],label=refPz[0:3])
+            ax[b].hist(selection[refZ],bins=50,histtype='step',range=(0,1.5),color=colors[i],label='Spec. with \n '+refPz[0:3]+' binning',ls='dashed')
+    axmain.set_xlabel('Photometric redshift')
+    fig.subplots_adjust(wspace=0.3,left = 0.1, right = 0.9, bottom = 0.3, top = 0.95)
+    #ax[2].legend(bbox_to_anchor=(1.04,1), loc="upper center")
+    ax[2].legend(loc='upper left', bbox_to_anchor=(0.5, -0.28), ncol=2)
+    fig.savefig('nz_comp.png')
 
 def main():
     
-    plotbias = True
-    plots68 = True
-    plotNz = False
+    plotbias = False
+    plots68 = False
+    plotNz = True
     
-    directoryName = '/Volumes/NO NAME/'
-    validationFilename = 'validsample_may2018_2_2_v2.fits'#'validsample_may2018_good4y1.fits'#'y3y1valid_april2019_dnfgold1_tmp.fits'#'Y3GOLD2_2_VIPERS_matched_validation.fits'
+    directoryName = ''
+    validationFilename = 'validsample_may2018_2_2_v2.fits'
     hdu = fits.open(directoryName+validationFilename,memmap=True)
     validationData = hdu[1].data
     #zbins = [(0.6,0.65),(0.65,0.7),(0.7,0.75),(0.75,0.8),(0.8,0.85),(0.85,0.9),(0.9,0.95),(0.95,1.0)]
@@ -141,8 +169,7 @@ def main():
     print('Analyzing',pzsnz,'from',validationFilename)
     zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
     if plotNz:
-        plotNz(validationData,zbins,pzs,pzsnz)
-    
+        plotNz_histos(validationData,zbins,zip(pzs,pzsnz))
             
 if __name__ == "__main__":
     main()
