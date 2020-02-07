@@ -70,11 +70,14 @@ def plotFoM(validationData,zbins,pzs,metric):
         errmetric_vip_list = []
         zmid_list = []
         for zmin,zmax in zbins:
-            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2)
-            zsel_vip = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['source'] == "VIPERS" ) #& (validationData[refZ] > 0.01) & (validationData['zflg'] > 2.9) & (validationData['zflg'] < 9) & (validationData['classFlag'] > 0) 
+            print('Bin ',zmin,zmax)
+            basicsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2)
+            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData['DNF_ZMEAN_SOF'])
+            zsel_vip = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['source'] == "VIPERS" ) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData['DNF_ZMEAN_SOF'])#& (validationData[refZ] > 0.01) & (validationData['zflg'] > 2.9) & (validationData['zflg'] < 9) & (validationData['classFlag'] > 0) 
         #zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData[refZ] > 0.01) & (validationData['ZFLG'] > 2.9) & (validationData['ZFLG'] < 9) & (validationData['CLASSFLAG'] > 0)
             selection = validationData[zsel]
             selection_vip = validationData[zsel_vip]
+            print(len(validationData[basicsel]),len(selection),len(selection_vip))
             zmid = (zmin + zmax)/2.0
             zmid_list.append(zmid)
             if metric == 'bias':
@@ -93,7 +96,11 @@ def plotFoM(validationData,zbins,pzs,metric):
                 ylab = 'Sigma_68'
             if metric == 's681pz':
                 val = sigma_68_1pz(selection[refPz]-selection[refZ],selection[refZ])
-                errval = bootstrap(selection[refPz]-selection[refZ], 30, sigma_68_1pz)
+                val_vip = sigma_68_1pz(selection_vip[refPz]-selection_vip[refZ],selection[refZ])
+                n = 50
+                errval = np.std(bootstrap(selection[refPz]-selection[refZ], n, sigma_68_1pz, kwargs=dict(axis=1, z_spec = selection[refZ])))
+                errval_vip = np.std(bootstrap(selection_vip[refPz]-selection_vip[refZ], n, sigma_68_1pz, kwargs=dict(axis=1, z_spec = selection[refZ])))
+                ylab = 'Sigma_68/1+z'
             #print(len(selection),zmin,zmax,'bias',bias,'+-',errbias,'s68',s68,'s68/1+z',s681pz)
         #if metric == 'bias':
             print(metric,'val',val,'errval',errval)
@@ -134,8 +141,9 @@ def plotNz_histos(validationData,zbins,pzs):
     # Fill subplots with N(z)
     for b,(zmin,zmax) in enumerate(zbins):
         for i,(refPz,pzNz) in enumerate(listpzs):
-            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2)
+            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData['DNF_ZMEAN_SOF'])
             selection = validationData[zsel]
+            #print(len[selection])
             ax[b].hist(selection[pzNz],bins=50,histtype='step',range=(0,1.5),color=colors[i],label=refPz[0:3])
             ax[b].hist(selection[refZ],bins=50,histtype='step',range=(0,1.5),color=colors[i],label='Spec. with \n '+refPz[0:3]+' binning',ls='dashed')
     axmain.set_xlabel('Photometric redshift')
@@ -146,26 +154,29 @@ def plotNz_histos(validationData,zbins,pzs):
 
 def main():
     
-    plotbias = False
+    plotbias = True
     plots68 = False
+    plots681pz = True
     plotNz = True
     
     directoryName = ''
-    validationFilename = 'validsample_may2018_2_2_v2.fits'
+    validationFilename = 'data/validsample_may2018_2_2_v2.fits'
     hdu = fits.open(directoryName+validationFilename,memmap=True)
     validationData = hdu[1].data
     #zbins = [(0.6,0.65),(0.65,0.7),(0.7,0.75),(0.75,0.8),(0.8,0.85),(0.85,0.9),(0.9,0.95),(0.95,1.0)]
-    zbins = [(0.2,0.3),(0.3,0.4),(0.4,0.5),(0.5,0.6),(0.6,0.7),(0.7,0.8),(0.8,0.9),(0.9,1.0),(1.0,1.1),(1.1,1.2),(1.2,1.3)]
-    #zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
+    #zbins = [(0.2,0.3),(0.3,0.4),(0.4,0.5),(0.5,0.6),(0.6,0.7),(0.7,0.8),(0.8,0.9),(0.9,1.0),(1.0,1.1),(1.1,1.2),(1.2,1.3)]
+    zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
 
-    pzs = ['BPZ_ZMEAN_SOF','DNF_ZMEAN_SOF'] #'Z_MEAN'
+    pzs = ['DNF_ZMEAN_SOF'] #'Z_MEAN'
     print('Analyzing',pzs,'from',validationFilename)
     if plotbias:
         plotFoM(validationData,zbins,pzs,'bias')
     if plots68:
         plotFoM(validationData,zbins,pzs,'s68')
-        
-    pzsnz = ['BPZ_ZMC_SOF','DNF_ZMC_SOF'] 
+    if plots681pz:
+        plotFoM(validationData,zbins,pzs,'s681pz')
+       
+    pzsnz = ['BPZ_ZMEAN_SOF','DNF_ZMEAN_SOF'] 
     print('Analyzing',pzsnz,'from',validationFilename)
     zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
     if plotNz:
