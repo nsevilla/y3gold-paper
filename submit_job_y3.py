@@ -91,19 +91,19 @@ def write_boxsearch(ra_range,dec_range,fname_sql="out.sql",data_out="out.fits",s
     writensub(stout,data_out,fname_sql,submit)
 
 submit = False
-boxsearch = False
-skydistribution = True
+boxsearch = True
+skydistribution = False
 sample = False
 sampling = 0.1
 classifier = 'extended_class_mash_sof'
 extval=3
+fields_ra = ["sxds":(33.6,35.5),"deep2_3":(350.1,354.0),"vvds":(332.0,341.4)]
+fields_dec = ["sxds":(-5.7,-3.9),"deep2_3":(-1.7,1.1),"vvds":(-0.7,2.2)]
 
 if boxsearch == True:
-    field_names = ["sxds","deep2_3","vvds"]
-    ra = [(33.6,35.5),(350.1,354.0),(336.9,341.4)]
-    dec = [(-5.7,-3.9),(-1.7,1.1),(-0.7,2.2)]
-    for field,ra_range,dec_range in zip(field_names,ra,dec):
-        write_boxsearch(ra_range,dec_range,fname_sql="field_"+field+"_y3gold.sql",data_out="field_"+field+"_y3gold.fits",submit=submit)
+    fields = ["sxds","deep2_3","vvds"]
+    for field in fields:
+        write_boxsearch(fields_ra[field],fields_dec[field],fname_sql="field_"+field+"_y3gold.sql",data_out="field_"+field+"_y3gold.fits",submit=submit)
 
 if skydistribution == True:
     write_skydistribution(classifier=classifier,extval=extval,fname_sql="skydistribution_"+classifier+str(extval)+"_y3gold.sql",data_out="skydistribution_"+classifier+str(extval)+"_y3gold.fits",submit=submit)
