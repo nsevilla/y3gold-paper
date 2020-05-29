@@ -47,7 +47,7 @@ def main():
     print args
 
 #    credential = {'account_name': args.user, 'password': getPassword()}
-    credential = {'account_name': args.user, 'password': 'El8qcG7cpDRjQT7SJQ0gNi2enh7tjBgvEQlSW1VJ'} #REMOVE
+    credential = {'account_name': args.user, 'password': 'r0/En5eV2tYN4HMbLAfftz+4SonfkqjLW5P1iNVp'} #REMOVE
     sql = args.__dict__['sql-file'].read()
 
     job = None
