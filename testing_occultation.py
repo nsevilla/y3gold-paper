@@ -11,6 +11,8 @@ from sklearn.neighbors import NearestNeighbors as NN
 import matplotlib
 from matplotlib import pyplot as plt
 matplotlib.use("Agg")
+matplotlib.style.use('des_dr1')
+from descolors import BAND_COLORS
 from astropy.io import fits
 
 def ring(i,intr,extr):
@@ -31,7 +33,7 @@ midbins =  np.linspace(1, distance, nbins)
 #gala = np.vstack((xgala,ygala)).T
 
 #real data
-filename_galaxies = '/Users/nsevilla/y3gold-paper/data/field_300_redmagic.fits'  
+filename_galaxies = '/Users/nsevilla/y3gold-paper/data/field_300.fits'  
 hdulist = fits.open(filename_galaxies,memmap=True)
 tdata_galaxies = hdulist[1].data
 filename_stars = '/Users/nsevilla/y3gold-paper/data/field_300.fits'  #field_300.fits #field_vvds_y3gold.fits
@@ -39,13 +41,13 @@ hdulist = fits.open(filename_stars,memmap=True)
 tdata_stars = hdulist[1].data
 
 # Additional cut to be applied to the stars
-cutname = 'sof_cm_mag_i'
-#cut     = [[16, 18], [18, 19], [19, 20], [20, 21], [21, 22]]
-cut     = [[16, 20], [20, 22]]
+cutname = 'sof_psf_mag_i'
+cut     = [[16, 18], [18, 19], [19, 20], [20, 21], [21, 22]]
+#cut     = [[16, 20], [20, 22]]
 ncut = len(cut)
-cutnamez = 'ZREDMAGIC'
-cutz     = [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8], [0.8,1.0]]
-ncutz = len(cutz)
+#cutnamez = 'ZREDMAGIC'
+#cutz     = [[0.2, 0.4], [0.4, 0.6], [0.6, 0.8], [0.8,1.0]]
+#ncutz = len(cutz)
 
 # STAR
 cutS = (tdata_stars['extended_class_mash_sof'] < 1)
@@ -56,8 +58,8 @@ var = tdata_stars[cutname][cutS]
 nsta = len(tdata_stars[cutS])
 
 # GALAXY
-#cutG = (tdata_galaxies['extended_class_mash_sof'] > 2)
-cutG = (tdata_galaxies['ZREDMAGIC'] < 0.4)
+cutG = (tdata_galaxies['extended_class_mash_sof'] > 2)
+#cutG = (tdata_galaxies['ZREDMAGIC'] < 0.4)
 xG = tdata_galaxies['ra'][cutG]*3600. #degrees to arcseconds
 yG = tdata_galaxies['dec'][cutG]*3600. #degrees to arcseconds
 #gala = np.vstack((xG,yG)).T
@@ -94,6 +96,7 @@ print('Calculating histos')
 hist,histerr = [],[]
 area = np.zeros((nbins))
 
+colors = [BAND_COLORS['u'],BAND_COLORS['g'],BAND_COLORS['r'],BAND_COLORS['i'],BAND_COLORS['z'],BAND_COLORS['Y']]
 plt.figure()
 for i in range(ncut):
     d, derr, cnt = np.zeros((nbins)), np.zeros((nbins)), np.zeros((nbins))
@@ -114,9 +117,10 @@ for i in range(ncut):
     print(hist)
     print(derr)
     print(len(midbins),len(hist))
-    plt.errorbar(midbins, hist[i], yerr=histerr[i], fmt='o', label=cutname+'='+str(cut[i]))
-plt.ylabel('Relative abundance of galaxies with respect to 20 asec')
-plt.xlabel('Distance (arcsec)') 
+    plt.errorbar(midbins, hist[i], yerr=histerr[i], fmt='o', label='SOF PSF i-band magnitude ='+str(cut[i]), color=colors[i])
+plt.title('Stellar-centric galaxy occultation (near Galactic plane)')
+plt.ylabel('Relative abundance of galaxies')
+plt.xlabel('Distance from star (arcsec)') 
 plt.legend()
-plt.savefig('figs/y3gold_stellar_occultation_test.png')
+plt.savefig('figs/y3gold_stellar_occultation_ra300_test.png')
 
