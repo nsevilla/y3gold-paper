@@ -2,7 +2,7 @@
 '''
 This script will match catalogs for detection completeness and efficiency/contamination measurements
 Author: Nacho Sevilla
-Usage: python match_catalogs.py
+Usage: python match_catalogs.py [OPTIONS]
 '''
 import os,sys
 import matplotlib
@@ -13,10 +13,14 @@ import numpy as np
 from scipy.optimize import curve_fit
 import smatch
 import warnings
+import efficiencyError
 warnings.filterwarnings('ignore')
+from descolors import BAND_COLORS
 from optparse import OptionParser
 
-workdir = '/Users/nsevilla/y3gold-paper/'
+matplotlib.style.use('des_dr1')
+
+workdir = '/Users/nsevilla/y3gold-paper/'#'/Users/nsevilla/des/'
 datadir = '/Users/nsevilla/y3gold-paper/data/'
 figsdir = '/Users/nsevilla/y3gold-paper/figs/'
 
@@ -25,17 +29,15 @@ def match_cat(tdata_1,tdata_2,radius):
     maxmatch = 1 
     NSIDE = 4096
     
-    ra_1 = tdata_1['alphawin_j2000']
-    dec_1 = tdata_1['deltawin_j2000']
-    #class_1 = tdata_1['extended_class_mash_sof']
-    #mag_1 = tdata_1['mag_auto_i']
-    #ra_1 = tdata_1['RA']
-    #dec_1 = tdata_1['DEC']
-    ra_2 = tdata_2['ra']
-    dec_2 = tdata_2['dec']
-    #class_2 = tdata_2['iclassification_extendedness']
-    #mag_2 = tdata_2['imag_kron']
-    print(radius)
+    ra_1 = tdata_1['ALPHAWIN_J2000'] ## Y3GOLD
+    dec_1 = tdata_1['DELTAWIN_J2000'] ## Y3GOLD
+    ra_2 = tdata_2['ra'] ## HSC
+    dec_2 = tdata_2['dec'] ## HSC
+    #ra_1 = tdata_1['ra']
+    #dec_1 = tdata_1['dec']
+    #ra_2 = tdata_2['ra_acs']
+    #dec_2 = tdata_2['dec_acs']
+   
     matches = smatch.match(ra_1, dec_1, radius, ra_2, dec_2, nside=NSIDE, maxmatch=maxmatch)
     
     return matches
@@ -50,7 +52,7 @@ def plot_detection_completeness(tdata_1,tdata_2,matches,minmax,binning,binvar,fi
         ref_class = 'bdf_T'
         general_mask = (tdata_2['mask_flags'] == 0) & (tdata_2['flags'] == 0) & (tdata_2['bdf_T'] < 30)
         general_mask_matched = (tdata_2['mask_flags'][matches['i2']] == 0) & (tdata_2['flags'][matches['i2']] == 0)  & (tdata_2['bdf_T'][matches['i2']] < 30)
-    elif reference == 'HSC':
+    elif reference == 'HSC' or reference == 'deepvsHSC':
         ref_class = 'i_extendedness_value'
         general_mask = (tdata_2['i_extendedness_value'] > -1)
         general_mask_matched = (tdata_2['i_extendedness_value'][matches['i2']] > -1)
@@ -58,9 +60,11 @@ def plot_detection_completeness(tdata_1,tdata_2,matches,minmax,binning,binvar,fi
         #general_mask_matched = (tdata_1['EXTENDED_CLASS_MASH_SOF'][matches['i1']] > -1)
     else:
         ref_class = None
-    thresholds = {"deep":0.01,"Balrog":0,"HSC":0.5}
+    thresholds = {"deep":0.01,"Balrog":0,"HSC":0.5,"deepvsHSC":-0.5}
  
     for typ in ['Stars','Galaxies']:
+        if typ == 'Stars':
+            continue
         for i in range(binning):
             lo = minmax[0]+i*interval
             midbins[i] = lo + interval*0.5
@@ -100,13 +104,16 @@ def plot_detection_completeness(tdata_1,tdata_2,matches,minmax,binning,binvar,fi
             print(repr(dcompl))
         else:
             plt.errorbar(midbins,compl,yerr=dcompl,color='blue',marker='o',label=typ+' '+field,linestyle = '--')            
-    plt.xticks(np.arange(minmax[0], minmax[1]+1, 0.5))
-    plt.hlines(0.90,19,25)
-    plt.xlabel(binvar,fontsize=14)
+    #plt.xticks(np.arange(minmax[0], minmax[1]+1, 0.5))
+    plt.xticks(np.arange(minmax[0], minmax[1]+1, 1.0))
+    plt.hlines(0.90,19,27)
+    plt.xlabel('bdf mag i',fontsize=14)
+    #plt.xlabel(binvar,fontsize=14)
     plt.ylabel('Completeness',fontsize=14)
     plt.ylim(0.0,1.0)
-    plt.title('Completeness vs '+reference+' objects', fontsize=16)
-    plt.legend(loc='lower left',fontsize=14)
+    #plt.title('Completeness vs '+reference+' objects', fontsize=16)
+    plt.title('Completeness vs ultra-deep HSC objects (COSMOS)', fontsize=16)
+    #plt.legend(loc='lower left',fontsize=14)
     plt.grid(True)
     plt.savefig(figsdir+'completeness_galaxies_vs_'+reference+'_test.png')
 
@@ -115,46 +122,64 @@ def plot_detection_completeness(tdata_1,tdata_2,matches,minmax,binning,binvar,fi
 def plot_eff_cont(tdata_1,tdata_2,matches,minmax,binning,binvar,field,reference):
     ppv = np.empty(binning)
     dppv = np.empty(binning)
+    dppv_lo = np.empty(binning)
+    dppv_hi = np.empty(binning)
     tpr = np.empty(binning)
     dtpr = np.empty(binning)
     midbins = np.empty(binning)
     interval = float(minmax[1]-minmax[0])/float(binning)
     ref_class = 'i_extendedness_value'
     data_class = 'extended_class_mash_sof'
+    #ref_class = 'mu_class_acs'
+    #data_class = 'iclassification_extendedness'
     ref_idx = 'i2'
-    truth = 0 #extendedness for HSC
-    ths = [0.5,1.5,2.5]
-    for th in ths:
-        print('Threshold <=',th-0.5)
+    truth_th = 0.5 #extendedness for HSC
+    #truth_th = 1.5 #mu_acs for ACS
+    ths = [0.5,1.5,2.5] #for Y3 GOLD
+    #ths = [0.5] #for HSC
+    ### note that the following procedure is constructed for galaxies
+    colors = [BAND_COLORS['u'],BAND_COLORS['g'],BAND_COLORS['r']]
+    for t,th in enumerate(ths):
+        #print('Threshold >=',th-0.5)
         for i in range(binning):
             lo = minmax[0]+i*interval
             midbins[i] = lo + interval*0.5
-            mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval) & (tdata_1[data_class][matches['i1']] < th)
+            mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval) & (tdata_1[data_class][matches['i1']] > th) # > th Y3 GOLD 
             #print(len(tdata_2[ref_class][matches['i2']]))
-            tp = sum(tdata_2[ref_class][matches['i2']][mask] == truth)
-            fp = sum(tdata_2[ref_class][matches['i2']][mask] != truth)
+            tp = sum(tdata_2[ref_class][matches['i2']][mask] > truth_th) #> truth_th HSC, == 1 for ACS
+            fp = sum(tdata_2[ref_class][matches['i2']][mask] < truth_th) #< truth_th HSC, == 2 for ACS
             #print(lo,'-',lo+interval,tp,fp)
             ppv[i] = float(tp)/float(tp+fp)
-            dppv[i] = 1/float(tp+fp)
-            dppv[i] = dppv[i]*np.sqrt(float(tp)*(1-dppv[i])) #binomial error, temporary
-            mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval) & (tdata_1[data_class][matches['i1']] > th)
-            tn = sum(tdata_2[ref_class][matches['i2']][mask] == truth)        
+            dppv[i] = 1/float(tp+fp) 
+            dppv[i] = dppv[i]*np.sqrt(float(tp)*(1-ppv[i])) #binomial error, temporary
+            #einterval = efficiencyError.efficiencyError(float(tp+fp),float(tp),0.95).calculate() # See Paterno 2004 Fermilab note
+            #print interval[1],'-',interval[2]
+            #dppv_lo[i] = einterval[0]-einterval[1]
+            #dppv_hi[i] = einterval[2]-einterval[0]
+            mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval) & (tdata_1[data_class][matches['i1']] < th) # < th Y3 GOLD
+            tn = sum(tdata_2[ref_class][matches['i2']][mask] > truth_th) #> truth_th HSC, == 1 for ACS      
             tpr[i] = float(tp)/float(tp+tn)
             #mask = (tdata_1[binvar][matches['i1']] > lo) & (tdata_1[binvar][matches['i1']] < lo + interval)
             #gals =  sum(tdata_2[ref_class][matches['i2']][mask] == truth)
             #tpr[i] = float(tp)/float(gals)
             dtpr[i] = 1/float(tp+fp)
-            dtpr[i] = dtpr[i]*np.sqrt(float(tp)*(1-dtpr[i])) #binomial error, temporary
-            print(midbins[i],(1.0-ppv[i])*100,tpr[i]*100)
-        plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination '+field+' MASH <= '+str(th+0.5))
-        plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency '+field+' MASH <= '+str(th+0.5))
-    plt.xlabel('SOF i-band magnitude',fontsize=14)
-    plt.ylabel('Galaxy efficiency/contamination',fontsize=14)
-    plt.hlines(0.95,19,25)
+            dtpr[i] = dtpr[i]*np.sqrt(float(tp)*(1-tpr[i])) #binomial error, temporary
+            print(midbins[i],float(tp+fp),(1.0-ppv[i])*100,dppv[i]*100,tpr[i]*100,dtpr[i]*100)
+        #plt.errorbar(midbins,1.0-ppv,yerr=[dppv_lo,dppv_hi],marker='o',label='Contamination '+field.upper()+' MASH >= '+str(th+0.5))
+        plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination '+field.upper()+' MASH $\geq$ '+str(th+0.5),color=colors[t])
+        plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency '+field.upper()+' MASH $\geq$ '+str(th+0.5),color=colors[t],ls='dashed')
+        #plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination') # ACS
+        #plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency') # ACS
+    #plt.xlabel('SOF i-band magnitude')
+    plt.xlabel('i-band magnitude')
+    plt.ylabel('Galaxy efficiency/contamination')
+    plt.hlines(0.95,19,24)
     plt.ylim(0.0,1.0)
-    plt.title('Efficiency/contamination vs HSC classification: '+ field, fontsize=16)
-    plt.legend(loc='lower left',fontsize=10)
+    plt.title('Efficiency/contamination vs HSC galaxy classification: '+ field.upper())
+    #plt.title('Efficiency/contamination vs ACS galaxy classification: '+ field.upper(), fontsize=16)
+    plt.legend(loc='center left')
     plt.savefig(figsdir+'effpur_vs_'+reference+'_'+field+'_test.png')
+    return tpr,dtpr,ppv,dppv_lo,dppv_hi ### this will return the values for the highest threshold th
 
 def colorterm1(x,A1,B):
     return A1*x[0]+x[1]+B
@@ -206,24 +231,29 @@ def main():
     parser.add_option("--detection_completeness",action="store_true",dest="measure_completeness",help="Toggle detection completeness",default=False)
     parser.add_option("--efficiency_contamination",action="store_true",dest="measure_effcont",help="Toggle efficiency/contamination",default=False)
     parser.add_option("--estimate_color_terms",action="store_true",dest="color_terms",help="Toggle color term calibration",default=False)
-    parser.add_option("--reference",dest="reference",help="Reference catalog to use (HSC/deep/Balrog)",default='HSC')
+    parser.add_option("--reference",dest="reference",help="Reference catalog to use (HSC/deep/Balrog/deepvsHSC)",default='HSC')
     parser.add_option("--band",dest="band",help="Reference band",default='i')
     (options, args) = parser.parse_args()
 
     #fields = ['sxds','deep23','vvds']
-    fields = ['snx3']
+    #fields = ['cosmosud']
     #fields = ['w05']
+    fields = ['snx3']
     
     if options.measure_effcont:
         print('Measuring efficiency/contamination')
         for field in fields:
-            hdulist = fits.open(datadir+field+'_y3gold_completeness_Arctmasked_S18grizmasked.fits',memmap=True)
+            hdulist = fits.open(datadir+field+'_y3gold_Arctmasked_S18grizmasked.fits',memmap=True)
+            #hdulist = fits.open('/Users/nsevilla/data/HSC_14119_cosmos_wide_sg.fits',memmap=True)
             tdata_1 = hdulist[1].data
-            hdulist = fits.open(datadir+field+'_hscw02_completeness_goldmasked_Arctmasked_S18grizmasked_cut.fits',memmap=True)
+            hdulist = fits.open(datadir+field+'_hsc_goldmasked_Arctmasked_S18grizmasked_cut.fits',memmap=True)
+            #hdulist = fits.open('/Users/nsevilla/data/cosmos_acs_iphot_200709_topcat.fits',memmap=True)
             tdata_2 = hdulist[1].data    
             print('Matching in field',field)
             matches = match_cat(tdata_1,tdata_2,radius=0.5/3600)
-            plot_eff_cont(tdata_1,tdata_2,matches,minmax=[19,22.5],binning=1,binvar='SOF_CM_MAG_CORRECTED_I',field=field,reference=options.reference)
+            tpr,dtpr,ppv,dppv_lo,dppv_hi = plot_eff_cont(tdata_1,tdata_2,matches,minmax=[19,24],binning=10,binvar='SOF_CM_MAG_CORRECTED_I',field=field,reference=options.reference)
+            #tpr,dtpr,ppv,dppv = plot_eff_cont(tdata_1,tdata_2,matches,minmax=[19,24],binning=10,binvar='imag_kron',field=field,reference=options.reference)
+            #print(tpr)
     if options.measure_completeness:
         print('Measuring detection completeness')
         for field in fields:
@@ -233,14 +263,17 @@ def main():
             elif options.reference == 'deep':
                 hdulist1 = fits.open(datadir+field+'_y3gold_completeness_dfmasked.fits',memmap=True)
                 hdulist2 = fits.open(datadir+field+'_df_masked_goldmasked_selectedcols.fits',memmap=True)
+            elif options.reference == 'deepvsHSC':
+                hdulist1 = fits.open(datadir+field+'_df_Arctmasked_S18Amasked_dfmasked_bounds.fits',memmap=True)
+                hdulist2 = fits.open(datadir+field+'_hsc_Arctmasked_S18Amasked_dfmasked_bounds_sofconv.fits',memmap=True)
             else:
                 print('Data not found',options.reference)
                 sys.exit()
             tdata_1 = hdulist1[1].data
             tdata_2 = hdulist2[1].data    
             print('Matching in field',field)
-            matches = match_cat(tdata_1,tdata_2,radius = 2.0/3600)
-            if options.reference == 'HSC':
+            matches = match_cat(tdata_1,tdata_2,radius = 1.0/3600)
+            if options.reference == 'HSC' or options.reference == 'deepvsHSC':
                 #binvar = options.band+'_cmodel_mag'
                 binvar = 'sof_converted_'+options.band
                 #binvar='sof_cm_mag_corrected_'+options.band
@@ -249,7 +282,7 @@ def main():
             else:
                 binvar='sof_cm_mag_corrected_'+options.band
             print(binvar,field,options.reference)
-            plot_detection_completeness(tdata_1,tdata_2,matches,minmax=[19,25],binning=30,binvar=binvar,field=field,reference=options.reference)
+            plot_detection_completeness(tdata_1,tdata_2,matches,minmax=[19,27],binning=30,binvar=binvar,field=field,reference=options.reference)
     if options.color_terms:
         print('Calibrating color terms')
         hdulist = fits.open(datadir+'y3gold_hscreg_stars_calibration_b.fits',memmap=True)
