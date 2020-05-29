@@ -1,6 +1,7 @@
 ### photoz_validation.py
 ### Author: I.Sevilla-Noarbe
 ### This code is based on E.Gaztanaga's VIPERS validation
+
 from astropy.table import Table
 import pandas as pd
 import numpy as np
@@ -20,6 +21,7 @@ from astropy.convolution import convolve, Gaussian1DKernel, Box1DKernel
 from scipy.optimize import curve_fit as cu
 from astroML.resample import bootstrap
 from astroML.stats import sigmaG
+from optparse import OptionParser
 
 
 def readVIPERS(directoryName):
@@ -113,7 +115,7 @@ def plotFoM(validationData,zbins,pzs,metric):
         #plt.scatter(zmid_list,metric_list,label=refPz)
         plt.xlabel('Photo-z bin')
         plt.ylabel(ylab)
-        plt.savefig(metric+'_pz.png')
+        plt.savefig(metric+'_pz_test.png')
         #else:
         #    plt.scatter(zmid_list,metric_list,label=refPz)
         #    plt.xlabel('Photo-z bin')
@@ -150,36 +152,41 @@ def plotNz_histos(validationData,zbins,pzs):
     fig.subplots_adjust(wspace=0.3,left = 0.1, right = 0.9, bottom = 0.3, top = 0.95)
     #ax[2].legend(bbox_to_anchor=(1.04,1), loc="upper center")
     ax[2].legend(loc='upper left', bbox_to_anchor=(0.5, -0.28), ncol=2)
-    fig.savefig('nz_comp.png')
+    fig.savefig('nz_comp_test.png')
 
 def main():
-    
-    plotbias = True
-    plots68 = False
-    plots681pz = True
-    plotNz = True
-    
-    directoryName = ''
-    validationFilename = 'data/validsample_may2018_2_2_v2.fits'
-    hdu = fits.open(directoryName+validationFilename,memmap=True)
+    '''
+    Run code with options
+    '''
+    usage = "%prog [options]"
+    parser = OptionParser(usage=usage)
+    parser.add_option("--plot_bias",action="store_true",dest="plot_bias",help="Toggle bias test",default=False)
+    parser.add_option("--plot_s68",action="store_true",dest="plot_s68",help="Toggle sigma68 test",default=False)
+    parser.add_option("--plot_s681pz",action="store_true",dest="plot_s681pz",help="Toggle sigma68/(1+z) test",default=False)
+    parser.add_option("--plot_Nz",action="store_true",dest="plot_Nz",help="Toggle N(z) test",default=False)
+    parser.add_option("--datapath",type="string",dest="datapath",help="Directory containing validation data",
+                          default="/Users/nsevilla/y3gold-paper/data/validsample_may2018_2_2_v2.fits")
+    (options, args) = parser.parse_args()
+         
+    hdu = fits.open(options.datapath,memmap=True)
     validationData = hdu[1].data
     #zbins = [(0.6,0.65),(0.65,0.7),(0.7,0.75),(0.75,0.8),(0.8,0.85),(0.85,0.9),(0.9,0.95),(0.95,1.0)]
-    #zbins = [(0.2,0.3),(0.3,0.4),(0.4,0.5),(0.5,0.6),(0.6,0.7),(0.7,0.8),(0.8,0.9),(0.9,1.0),(1.0,1.1),(1.1,1.2),(1.2,1.3)]
-    zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
+    zbins = [(0.2,0.3),(0.3,0.4),(0.4,0.5),(0.5,0.6),(0.6,0.7),(0.7,0.8),(0.8,0.9),(0.9,1.0),(1.0,1.1),(1.1,1.2),(1.2,1.3)]
+    #zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
 
     pzs = ['DNF_ZMEAN_SOF'] #'Z_MEAN'
-    print('Analyzing',pzs,'from',validationFilename)
-    if plotbias:
+    print('Analyzing',pzs,'from',options.datapath)
+    if options.plot_bias:
         plotFoM(validationData,zbins,pzs,'bias')
-    if plots68:
+    if options.plot_s68:
         plotFoM(validationData,zbins,pzs,'s68')
-    if plots681pz:
+    if options.plot_s681pz:
         plotFoM(validationData,zbins,pzs,'s681pz')
        
     pzsnz = ['BPZ_ZMEAN_SOF','DNF_ZMEAN_SOF'] 
-    print('Analyzing',pzsnz,'from',validationFilename)
+    print('Analyzing',pzsnz,'from',options.datapath)
     zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
-    if plotNz:
+    if options.plot_Nz:
         plotNz_histos(validationData,zbins,zip(pzs,pzsnz))
             
 if __name__ == "__main__":
