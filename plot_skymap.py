@@ -43,12 +43,29 @@ plt.gca().add_artist(PathPatch(Path(z),facecolor='b',alpha=0.2))
 x,y =  smap.draw_survey(hscfile='hsc-pdr2-poly_2.txt',color='b')
 z = np.vstack((x, y)).T
 plt.gca().add_artist(PathPatch(Path(z),facecolor='b',alpha=0.2))
-x,y =  smap.draw_survey(hscfile='hsc-pdr2-poly_3.txt',color='b')
+x,y =  smap.draw_survey(hscfile='hsc-pdr2-poly_4.txt',color='b')
 z = np.vstack((x, y)).T
 plt.gca().add_artist(PathPatch(Path(z),facecolor='b',alpha=0.2))
 proj = smap.proj(15,10)
 plt.text(proj[0],proj[1], 'HSC-SSP DR2', weight='bold',
          fontsize=10, ha='center', va='center', color='b')
+
+##VHS-DR4
+x,y =  smap.draw_survey(hscfile='vhs-dr4-poly_1.txt',color='purple')
+z = np.vstack((x, y)).T
+plt.gca().add_artist(PathPatch(Path(z),facecolor='purple',alpha=0.2))
+x,y =  smap.draw_survey(hscfile='vhs-dr4-poly_2.txt',color='purple')
+z = np.vstack((x, y)).T
+plt.gca().add_artist(PathPatch(Path(z),facecolor='purple',alpha=0.2))
+x,y =  smap.draw_survey(hscfile='vhs-dr4-poly_3.txt',color='purple')
+z = np.vstack((x, y)).T
+plt.gca().add_artist(PathPatch(Path(z),facecolor='purple',alpha=0.2))
+proj = smap.proj(300,-35)
+plt.text(proj[0],proj[1], 'VHS DR4', weight='bold',
+         fontsize=10, ha='center', va='center', color='purple')
+proj = smap.proj(320,-10)
+plt.text(proj[0],proj[1], 'VHS DR4', weight='bold',
+         fontsize=10, ha='center', va='center', color='purple')
 
 ### KiDS-S 
 #x,y =  smap.draw_survey(hscfile='kids-s-poly.txt',color='g')
@@ -59,7 +76,7 @@ plt.text(proj[0],proj[1], 'HSC-SSP DR2', weight='bold',
 #         fontsize=10, ha='center', va='center', color='g')
 
 ### DES SN fields
-kwargs = dict(facecolor='none',edgecolor='b',lw=0.75,zorder=10)
+kwargs = dict(facecolor='none',edgecolor='r',lw=0.75,zorder=10)
 for v in skymap.survey.DES_SN.values():
     smap.tissot(v['ra'],v['dec'],DECAM,100,**kwargs)
 
@@ -101,8 +118,8 @@ plt.text(proj[0],proj[1], 'SMC', weight='bold',
          fontsize=10, ha='center', va='center', color='green')
 
 ### Galactic
-smap.plot(*gal2cel(0, 0),marker='x',color='k',ms=10,latlon=True)
-smap.plot(*gal2cel(0, -90),marker='+',color='k',ms=5,latlon=True)
+#smap.plot(*gal2cel(0, 0),marker='x',color='k',ms=10,latlon=True)
+#smap.plot(*gal2cel(0, -90),marker='+',color='k',ms=5,latlon=True)
 
 # Inset axis
 #llx,lly = smap(-30,-3.5)
@@ -128,5 +145,5 @@ smap.plot(*gal2cel(0, -90),marker='+',color='k',ms=5,latlon=True)
 #from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 #mark_inset(ax,iax, loc1=3, loc2=4, fc="none",ec='k',lw=0.5)
 
-#plt.savefig('des_footprint.pdf',bbox_inches='tight')
-plt.savefig('des_footprint_test.png')
+plt.savefig('des_footprint_test.pdf',bbox_inches='tight')
+#plt.savefig('des_footprint_test.png')
