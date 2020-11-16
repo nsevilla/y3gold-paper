@@ -66,6 +66,7 @@ def plotFoM(validationData,zbins,pzs,metric):
     refZ = 'Z' #'ZSPEC' #'Z_1'
     plt.figure()
     for refPz in pzs:
+        print(refPz)
         metric_list = []
         errmetric_list = []
         metric_nocorr_list = []
@@ -73,10 +74,10 @@ def plotFoM(validationData,zbins,pzs,metric):
         zmid_list = []
         for zmin,zmax in zbins:
             print('Bin ',zmin,zmax)
-            basicsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2)
+            basicsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) #& (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2)
             #zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData['DNF_ZMEAN_SOF_v2_2'])
             #zsel_vip = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['source'] == "VIPERS" ) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData['DNF_ZMEAN_SOF_v2_2'])#& (validationData[refZ] > 0.01) & (validationData['zflg'] > 2.9) & (validationData['zflg'] < 9) & (validationData['classFlag'] > 0) 
-            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData[refPz])
+            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) #& (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData[refPz])
         #zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData[refZ] > 0.01) & (validationData['ZFLG'] > 2.9) & (validationData['ZFLG'] < 9) & (validationData['CLASSFLAG'] > 0)
             selection = validationData[zsel]
             #selection_vip = validationData[zsel_vip]
@@ -130,9 +131,9 @@ def plotFoM(validationData,zbins,pzs,metric):
     plt.savefig(metric+'_pz_test.png')
     plt.show()
 
-def plotNz_histos(validationData,zbins,pzs):
+def plotNz_histos(validationData,refZ,zbins,pzs):
 
-    refZ = 'Z' #'ZSPEC' #'Z_1'
+    #refZ = 'Z' #'ZSPEC' #'Z_1'
     listpzs = list(pzs)
     colors = ['red','blue']
     fig = plt.figure()
@@ -145,24 +146,65 @@ def plotNz_histos(validationData,zbins,pzs):
     axmain.tick_params(labelcolor='w', top=False, bottom=False, left=False, right=False)
     # Create subplots
     ax = []
+    xtextpos = [0.5,0.5,0.55,0.1]
     for f in range(4):
         ax.append(fig.add_subplot(221+f))
     # Fill subplots with N(z)
     for b,(zmin,zmax) in enumerate(zbins):
         for i,(refPz,pzNz) in enumerate(listpzs):
+            print(refPz)
+            print(validationData[refPz])
             #zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData['DNF_ZMEAN_SOF_v2_2'])
-            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData[refPz])
+            zsel = (validationData[refPz] > zmin) & (validationData[refPz] < zmax) #& (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData[refPz])
             selection = validationData[zsel]
             #print(len[selection])
-            ax[b].hist(selection[pzNz],bins=50,histtype='step',range=(0,1.5),color=colors[i],label=refPz[0:3])
-            ax[b].hist(selection[refZ],bins=50,histtype='step',range=(0,1.5),color=colors[i],label='Spec. with \n '+refPz[0:3]+' binning',ls='dashed')
+            #print(refPz[0:3])
+            if 'MEAN' in pzNz:
+                labelpz = 'MEAN'
+            elif 'MC' in pzNz:
+                labelpz = '1NN'
+            else:
+                labelpz = 'ZPHOT' 
+            ax[b].hist(selection[pzNz],bins=50,histtype='step',range=(0,1.5),color=colors[i],label=labelpz) 
+            ax[b].hist(selection[refZ],bins=50,histtype='step',range=(0,1.5),color=colors[i],label=refZ,ls='dashed')
+            ks,pval = st.ks_2samp(selection[pzNz],selection[refZ])
+            ax[b].text(xtextpos[b],0.7-(i+1)*0.1,str(pval),transform=ax[b].transAxes, fontsize=14, color=colors[i])
+        ax[b].text(xtextpos[b],0.7,str(zmin)+' $<$ z $<$ '+str(zmax),transform=ax[b].transAxes, fontsize=14)
     axmain.set_xlabel('Photometric redshift')
     fig.subplots_adjust(wspace=0.3,left = 0.1, right = 0.9, bottom = 0.3, top = 0.95)
-    #ax[2].legend(bbox_to_anchor=(1.04,1), loc="upper center")
-    ax[2].legend(loc='upper left', bbox_to_anchor=(0.5, -0.28), ncol=2)
+    ax[2].legend(loc='upper left', bbox_to_anchor=(0.25, -0.28), ncol=2)
     fig.savefig('nz_comp_test.png')
 
-label_dict = {'DNF_ZMEAN_SOF_v2_2':'Corrected','Z_MEAN':'No SED-extinction / chrom. corrections'}
+def plotNz_single_histos(validationData,refZ,zbins,hrange,pzsnz):
+    #refZ = 'Z'#'ZSPEC'
+    colors = ['red','blue']
+    fig = plt.figure()
+    zmin = zbins[0]
+    zmax = zbins[1]
+    hdu = fits.open('/Users/nsevilla/des/data/y3_gold_2_2_sample01.fits',memmap=True)
+    sampleData = hdu[1].data
+    vselmask = (validationData[refZ] > zmin) & (validationData[refZ] < zmax) & (validationData['SOF_CM_MAG_CORRECTED_I'] > 17.5) & (validationData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*validationData[pzsnz[0]]) #& (validationData['SOF_CM_MAG_CORRECTED_I'] < 23.5) & (validationData['FLAGS_GOLD'] < 1) & (validationData['FLAGS_FOOTPRINT'] > 0) & (validationData['FLAGS_FOREGROUND'] < 2) & (validationData['EXTENDED_CLASS_MASH_SOF'] > 2) 
+    vselection = validationData[vselmask]
+    sselmask = (sampleData[pzsnz[0]] > zmin) & (sampleData[pzsnz[0]] < zmax) & (sampleData['FLAGS_GOLD'] < 1) & (sampleData['FLAGS_FOOTPRINT'] > 0) & (sampleData['FLAGS_FOREGROUND'] < 2) & (sampleData['EXTENDED_CLASS_MASH_SOF'] > 2) & (sampleData['SOF_CM_MAG_CORRECTED_I'] > 17.5)  & (sampleData['SOF_CM_MAG_CORRECTED_I'] < 18 + 4*sampleData[pzsnz[0]]) #& (sampleData['SOF_CM_MAG_CORRECTED_I'] < 23.5)
+    sselection = sampleData[sselmask]
+    for i,pzNz in enumerate(pzsnz):
+        if 'MEAN' in pzNz:
+            labelpz = 'MEAN'
+        elif 'MC' in pzNz:
+            labelpz = '1NN'
+            plt.hist(vselection[pzNz],bins=25,histtype='step',range=hrange,color=colors[i],density=True,label=labelpz+' estimate, validation data')
+            #plt.hist(sselection[pzNz],bins=25,histtype='step',range=(zmin,zmax),color=colors[i],density=True,label=labelpz+' estimate, all data',ls='dashed')
+        else:
+            labelpz = 'ZPHOT' 
+    plt.hist(vselection[refZ],bins=25,histtype='step',range=hrange,color='black',density=True,label='Spectroscopic redshift, validation data')
+    plt.xlabel('N(z) distribution')
+    plt.ylabel('PDF')
+    plt.ylim(0,13)
+    plt.legend(loc='upper right')
+    fig.savefig('nz_comp_single_test.pdf')
+
+label_dict = {'DNF_ZMEAN_SOF_v2_2':'Corrected','Z_MEAN':'No SED-extinction / chrom. corrections','ZREDMAGIC':'redMaGiC','DNF_ZMEAN_SOF':'Mean Z DNF','DNF_ZMC_SOF':'1NN Z DNF'}
+
 def main():
     '''
     Run code with options
@@ -175,7 +217,7 @@ def main():
     parser.add_option("--plot_s681pz",action="store_true",dest="plot_s681pz",help="Toggle sigma68/(1+z) test",default=False)
     parser.add_option("--plot_Nz",action="store_true",dest="plot_Nz",help="Toggle N(z) test",default=False)
     parser.add_option("--datapath",type="string",dest="datapath",help="Directory containing validation data",
-                          default="/Users/nsevilla/y3gold-paper/data/matched_VALIDSAMPLE_MAY2018_2_2_fluxfiducial_dnf.fits")
+                          default="/Users/nsevilla/y3gold-paper/data/validsample_may2018_2_2_v2.fits")#matched_VALIDSAMPLE_MAY2018_2_2_fluxfiducial_dnf.fits")
     #validsample_may2018_2_2_v2.fits
     #parser.add_option("--datapath",type="string",dest="datapath",help="Directory containing validation data",
                           #default=myfile)
@@ -183,25 +225,32 @@ def main():
          
     hdu = fits.open(options.datapath,memmap=True)
     validationData = hdu[1].data
-    #zbins = [(0.6,0.65),(0.65,0.7),(0.7,0.75),(0.75,0.8),(0.8,0.85),(0.85,0.9),(0.9,0.95),(0.95,1.0)]
-    zbins = [(0.2,0.3),(0.3,0.4),(0.4,0.5),(0.5,0.6),(0.6,0.7),(0.7,0.8),(0.8,0.9),(0.9,1.0),(1.0,1.1),(1.1,1.2),(1.2,1.3)]
-    #zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
 
-    pzs = ['DNF_ZMEAN_SOF_v2_2','Z_MEAN'] #'Z_MEAN'
-    #label_dict = {'DNF_ZMEAN_SOF_v2_2':'','Z_MEAN':', no chrom. corr.'}
-    print('Analyzing',pzs,'from',options.datapath)
-    if options.plot_bias:
-        plotFoM(validationData,zbins,pzs,'bias')
-    if options.plot_s68:
-        plotFoM(validationData,zbins,pzs,'s68')
-    if options.plot_s681pz:
-        plotFoM(validationData,zbins,pzs,'s681pz')
+    if options.plot_bias or options.plot_s68 or options.plot_s681pz:
+        zbins = [(0.2,0.3),(0.3,0.4),(0.4,0.5),(0.5,0.6),(0.6,0.7),(0.7,0.8),(0.8,0.9)]
+        pzs = ['DNF_ZMC_SOF','DNF_ZMEAN_SOF']#_v2_2'] 
+        print('Analyzing',pzs,'from',options.datapath)
+         
+        if options.plot_bias:
+            plotFoM(validationData,zbins,pzs,'bias')
+        if options.plot_s68:
+            plotFoM(validationData,zbins,pzs,'s68')
+        if options.plot_s681pz:
+            plotFoM(validationData,zbins,pzs,'s681pz')
        
-    pzsnz = ['DNF_ZMEAN_SOF_v2_2','Z_MEAN'] 
-    print('Analyzing',pzsnz,'from',options.datapath)
-    zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
     if options.plot_Nz:
-        plotNz_histos(validationData,zbins,zip(pzs,pzsnz))
+        refZ = 'Z'
+        pzs = ['Z','Z']#_v2_2'] #for binning purposes
+        pzsnz = ['DNF_ZMEAN_SOF','DNF_ZMC_SOF']#_v2_2']
+        print('Analyzing',pzsnz,'from',options.datapath,'for N(z)')
+        zbins = [(0.2,0.43),(0.43,0.63),(0.63,0.9),(0.9,1.3)]
+        plotNz_histos(validationData,refZ,zbins,zip(pzs,pzsnz))
+        #pzsnz = 'DNF_ZMC_SOF'       
+        zbins = [0.55,0.70]#[0.,1.5]
+        hrange = [0.2,0.8]
+        plotNz_single_histos(validationData,refZ,zbins,hrange,pzsnz)
             
 if __name__ == "__main__":
     main()
+
+    
