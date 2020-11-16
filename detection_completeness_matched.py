@@ -14,6 +14,7 @@ import warnings
 warnings.filterwarnings('ignore')
 from descolors import BAND_COLORS
 from optparse import OptionParser
+import efficiencyError
 
 matplotlib.style.use('des_dr1')
 
@@ -24,30 +25,43 @@ figsdir = '/Users/nsevilla/y3gold-paper/figs/'
 def plot_detection_completeness_matched(tdata, binvar, minmax, binning):
     compl = np.empty(binning)
     dcompl = np.empty(binning)
+    dcompl_lo = np.empty(binning)
+    dcompl_hi = np.empty(binning)
     midbins = np.empty(binning)
     interval = float(minmax[1]-minmax[0])/float(binning)
     for i in range(binning):
         lo = minmax[0]+i*interval
         midbins[i] = lo + interval*0.5
-        mask_match = (tdata[binvar] > lo) & (tdata[binvar] < lo + interval) & (tdata['detected'] > 0.5)
-        mask = (tdata[binvar] > lo) & (tdata[binvar] < lo + interval)
+        mask_quality = (tdata['match_flag_1.5_asec'] < 2) & \
+          (tdata['FLAGS_FOREGROUND'] == 0 ) & (tdata['FLAGS_FOOTPRINT'] == 1) & (tdata['FLAGS_BADREGIONS'] == 0) #& (tdata['mask_flags'] == 0) &  (tdata['flags'] == 0) 
+        mask_mag = (tdata[binvar] > lo) & (tdata[binvar] < lo + interval)
+        mask =  mask_mag & mask_quality 
+        #mask_match = mask & (tdata['meas_FLAGS_GOLD_SOF_ONLY'] < 2) & (tdata['detected'] > 0.5)
+        mask_match = mask & (tdata['detected'] > 0.5)
         detgal = len(tdata[mask_match])
         allgal = len(tdata[mask])
         print(lo,lo+interval,float(detgal),float(allgal),float(detgal)/float(allgal))
         compl[i] = float(detgal)/float(allgal)
         dcompl[i] = 1/float(allgal)
         dcompl[i] = dcompl[i]*np.sqrt(float(detgal)*(1-dcompl[i])) #binomial error, temporary
+        #einterval = efficiencyError.efficiencyError(float(allgal),float(detgal),0.95).calculate() #2-sigma errors
+        #dcompl_lo[i] = einterval[0]-einterval[1]
+        #dcompl_hi[i] = einterval[2]-einterval[0]
+
     plt.errorbar(midbins,compl,yerr=dcompl,marker='o',color='red',mfc='red',ecolor='red')
+    #plt.errorbar(midbins,compl,yerr=[dcompl_lo,dcompl_hi],marker='o',color='red',mfc='red',ecolor='red')
     print(repr(compl))
     print(repr(dcompl))
+    #print(repr(dcompl_lo))
+    #print(repr(dcompl_hi))
     plt.xticks(np.arange(minmax[0], minmax[1]+1, 0.5))
     plt.hlines(0.90,19,25)
-    plt.xlabel(binvar,fontsize=14)
+    plt.xlabel('i-band magnitude',fontsize=14)
     plt.ylabel('Completeness',fontsize=14)
     plt.ylim(0.0,1.0)
     plt.grid(True)
     plt.title('Completeness of Balrog objects', fontsize=16)
-    plt.savefig(figsdir+'completeness_galaxies_with_balrog_test.png')
+    plt.savefig(figsdir+'completeness_galaxies_with_balrog_test.pdf')
 
 def plot_eff_cont_matched(tdata, binvar, minmax, binning):
     ppv = np.empty(binning)
@@ -59,8 +73,8 @@ def plot_eff_cont_matched(tdata, binvar, minmax, binning):
     midbins = np.empty(binning)
     interval = float(minmax[1]-minmax[0])/float(binning)
     ref_class = 'extragalactic'
-    #data_class = 'EXTENDED_CLASS_MASH_SOF'
-    data_class = 'EXTENDED_CLASS_COADD'
+    data_class = 'EXTENDED_CLASS_MASH_SOF'
+    #data_class = 'EXTENDED_CLASS_COADD'
     truth_th = 0.5 
     ths = [0.5,1.5,2.5] #for Y3 GOLD
     ### note that the following procedure is constructed for galaxies
@@ -91,8 +105,13 @@ def plot_eff_cont_matched(tdata, binvar, minmax, binning):
             dtpr[i] = dtpr[i]*np.sqrt(float(tp)*(1-tpr[i])) #binomial error, temporary
             print(midbins[i],float(tp+fp),(1.0-ppv[i])*100,dppv[i]*100,tpr[i]*100,dtpr[i]*100)
         #plt.errorbar(midbins,1.0-ppv,yerr=[dppv_lo,dppv_hi],marker='o',label='Contamination MASH >= '+str(th+0.5))
-        plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination MASH $\geq$ '+str(th+0.5),color=colors[t])
-        plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency MASH $\geq$ '+str(th+0.5),color=colors[t],ls='dashed')
+        plt.errorbar(midbins,1.0-ppv,yerr=dppv,marker='o',label='Contamination MASH $\geq$ '+str(int(th+0.5)),color=colors[t])
+        plt.errorbar(midbins,tpr,yerr=dtpr,marker='+',label='Efficiency MASH $\geq$ '+str(int(th+0.5)),color=colors[t],ls='dashed')
+        print(repr(compl))
+        print(repr(dcompl))
+        print(repr(dcompl_lo))
+        print(repr(dcompl_hi))
+
     plt.xlabel('i-band magnitude')
     plt.ylabel('Galaxy efficiency/contamination')
     plt.hlines(0.95,minmax[0],minmax[1])
@@ -114,19 +133,22 @@ def main():
     (options, args) = parser.parse_args()
 
     if options.measure_completeness:
-        hdulist = fits.open(datadir+'matched_balrog_x3_v2.fits',memmap=True)
+        hdulist = fits.open(datadir+'balrog_detection_catalog_sof_run2_v1.4_x3.fits',memmap=True)
+        #hdulist = fits.open(datadir+'matched_balrog_x3_v2.fits',memmap=True)
         tdata = hdulist[1].data
-        binvar = 'bdf_mag_i'
+        binvar = 'true_bdf_mag_deredden_i'#'meas_cm_mag_deredden_i'#'bdf_mag_deredden_i'#'meas_cm_mag_deredden_i'#'bdf_mag_i'
         minmax = [19,25]
         binning = 10
         plot_detection_completeness_matched(tdata, binvar, minmax, binning)
-    if options.measure_effcont:
+    elif options.measure_effcont:
         hdulist = fits.open(datadir+'goldvhs_y3sgsep_v3.fits',memmap=True)
         tdata = hdulist[1].data
         binvar = 'SOF_CM_MAG_I'
         minmax = [15,21]
         binning = 10
         plot_eff_cont_matched(tdata, binvar, minmax, binning)
+    else:
+        print("No option selected (try python detection_completeness_matched --help)")
 
 if __name__ == "__main__":
     main()
