@@ -41,10 +41,11 @@ class efficiencyError:
         #integral for error estimate
         interval_list = []
         # not much difference using numpy and this way I can use append
-        xa = np.arange(eps-0.05, np.minimum(eps+0.05,0.999999), 0.0001)
+        step = 0.001 #0.0001
+        xa = np.arange(eps-0.05, np.minimum(eps+0.05,0.999999), step)
         counter = 0
         for alpha in xa:
-            xb = np.arange(alpha, np.minimum(eps+0.05,0.999999), 0.0001)
+            xb = np.arange(alpha, np.minimum(eps+0.05,0.999999), step)
             for beta in xb:
                 I = quad(self._pdf, alpha, beta, args=(N_, k_))
                 counter = counter + 1
